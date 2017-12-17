@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace decAAMP {
+namespace decBYAML.Properties {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace decAAMP {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("decAAMP.Resources", typeof(Resources).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("decBYAML.Properties.Resources", typeof(Resources).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -61,49 +61,12 @@ namespace decAAMP {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to ArmorHead
-        ///AtkBody
-        ///HandleELink::fade(%s)
-        ///HandleSLink::fade(%s)
-        ///Tail
-        ///Tail
-        ///BeamBase
-        ///Tail
-        ///isHoldByOwner
-        ///isHold
-        ///isFittingOrShootingArrow
-        ///IsUseAtCollision
-        ///AttackPower
-        ///AttackAttr
-        ///AttackType
-        ///CutGrassType
-        ///XLinkKey
-        ///Range
-        ///ScaleTime
-        ///AttackTarget
-        ///AttackDirType
-        ///GolemPartInitialIceMagic
-        ///GolemPartInitialBurn
-        ///IsReflectThrownBullet
-        ///isGuard
-        ///isGuardJust
-        ///getMirrorLevel
-        ///_Far
-        ///Enemy_Dragon_Ice
-        ///_Far
-        ///Fire
-        ///Grudge
-        ///Electric
-        ///IsPlayed_Demo480_1
-        ///Appearance_Today
-        ///Head
-        ///GrudgeEye_A
-        ///GrudgeEye_A_Eyeball
-        ///Gr [rest of string was truncated]&quot;;.
+        ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
-        internal static string U_King {
+        internal static byte[] GameFormatUtil {
             get {
-                return ResourceManager.GetString("U_King", resourceCulture);
+                object obj = ResourceManager.GetObject("GameFormatUtil", resourceCulture);
+                return ((byte[])(obj));
             }
         }
     }
