@@ -28,7 +28,7 @@ namespace GameFormatUtil.Compression
 
         public dynamic Read(Stream stream)
         {
-            using (EndianBinaryReader reader = new EndianBinaryReader(stream, Encoding.UTF8, Endian.Endian.Big))
+            using (EndianBinaryReader reader = new EndianBinaryReader(stream, Encoding.ASCII, Endian.Endian.Big))
             {
                 header = new ByamlHeader(reader);
 
@@ -55,9 +55,13 @@ namespace GameFormatUtil.Compression
 
         public void WriteXML(Dictionary<KeyValuePair<string, NodeType>, dynamic> data)
         {
+            XmlWriterSettings writerSettings = new XmlWriterSettings();
+            writerSettings.OmitXmlDeclaration = true;
+            writerSettings.ConformanceLevel = ConformanceLevel.Auto;
+            XmlWriter writer = XmlWriter.Create("test.xml", writerSettings);
 
-            XmlWriter writer = XmlWriter.Create("test.xml");
             writer.WriteStartDocument();
+            writer.WriteStartElement("root");
 
             foreach (var i in data)
             {
@@ -66,6 +70,8 @@ namespace GameFormatUtil.Compression
 
                 WriteNode(writer, part1.Key, part1.Value, i.Value);
             }
+
+            writer.WriteEndElement();
             writer.WriteEndDocument();
             writer.Close();
         }
@@ -76,6 +82,9 @@ namespace GameFormatUtil.Compression
 
         private void WriteNode(XmlWriter writer, String name, NodeType type, dynamic value)
         {
+            if (name.Contains("!"))
+                name = name.Replace('!', '_');
+
             writer.WriteStartElement(name);
             writer.WriteAttributeString("TYPE", type.ToString());
 
@@ -142,18 +151,14 @@ namespace GameFormatUtil.Compression
                     case NodeType.STRING:
                         return stringArray[reader.ReadInt32()];
                     case NodeType.BOOLEAN:
-                        return reader.ReadBoolean();
+                        return reader.ReadUInt32();
                     case NodeType.INTEGER:
                         return reader.ReadInt32();
                     case NodeType.FLOAT:
                         return reader.ReadSingle();
                     case NodeType.HASHID:
                         uint hash = reader.ReadCrc32();
-                        Console.WriteLine(hash);
                         return hash;
-                    case NodeType.NULL:
-                        reader.Skip(3);
-                        return "";
                     default:
                         Console.WriteLine($"Error at {reader.BaseStream.Position}/{reader.BaseStream.Length}");
                         throw new ByamlException($"Unknown Node Type '{((byte)type).ToString("X2")}'!");
@@ -184,7 +189,6 @@ namespace GameFormatUtil.Compression
                 NodeType type = (NodeType) reader.Read1MsbByte(lengthType);
                 String name = nameArray[nameIndex];
                 dynamic value = ReadNode(reader, type);
-                Console.WriteLine(name);
                 dictionary.Add(new KeyValuePair<string, NodeType>(name, type), value);
             }
 
@@ -274,5 +278,24 @@ namespace GameFormatUtil.Compression
         }
 
         #endregion
+
+        public class Events
+        {
+            public event EventHandler HeaderPassed;
+
+            protected virtual void OnHeaderPassed(EventArgs e)
+            {
+                HeaderPassed?.Invoke(this, e);
+            }
+
+            public class HeaderPassedEventArgs : EventArgs
+            {
+                
+                public uint NameArrayOffset { get; set; }
+                public Boolean HasStringArray { get; set; }
+                public uint StringArrayOffset { get; set; }
+                public uint RootNodeOffset { get; set; }
+            }
+        }
     }
 }
