@@ -185,6 +185,62 @@ namespace GameFormatUtil.Endian
 
         #endregion
 
+        #region ReadCrc
+
+        public String ReadCrc16()
+        {
+            byte[] hash = ReadBytes(2);
+            String s = "";
+
+            foreach (byte b in hash)
+                s += b.ToString("X2").ToLower();
+
+            return s;
+        }
+
+        public uint ReadCrc32()
+        {
+           return  ReadUInt32();
+        }
+
+        public String ReadCrc64()
+        {
+            byte[] hash = ReadBytes(8);
+            String s = "";
+
+            foreach (byte b in hash)
+                s += b.ToString("X2").ToLower();
+
+            return s;
+        }
+
+        #endregion
+
+        public uint Read1MsbByte(uint value)
+        {
+            if (currentEndian == Endian.Big || !systemLittleEndian)
+                return value & 0x000000FF;
+
+            return value >> 24;
+            
+        }
+
+        public uint Get3MsbBytes(uint value)
+        {
+            if (currentEndian == Endian.Big || !systemLittleEndian)
+                return value >> 8;
+
+            return value & 0x00FFFFFF;
+        }
+
+        public uint Get3LsbBytes(uint value)
+        {
+            if (currentEndian == Endian.Big || !systemLittleEndian)
+                return value & 0x00FFFFFF;
+
+            return value >> 8;
+        }
+
         public override string ToString()
         {
             string endianness = (currentEndian == Endian.Little) ? "Little Endian" : "Big Endian";

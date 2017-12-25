@@ -28,7 +28,7 @@ namespace GameFormatUtil.Compression
 
         public dynamic Read(Stream stream)
         {
-            using (EndianBinaryReader reader = new EndianBinaryReader(stream, Encoding.ASCII, Endian.Endian.Big))
+            using (EndianBinaryReader reader = new EndianBinaryReader(stream, Encoding.UTF8, Endian.Endian.Big))
             {
                 header = new ByamlHeader(reader);
 
@@ -74,25 +74,20 @@ namespace GameFormatUtil.Compression
 
         #region Private Methods
 
-        private void WriteNode(XmlWriter writer, String name, NodeType type, dynamic value) 
+        private void WriteNode(XmlWriter writer, String name, NodeType type, dynamic value)
         {
             writer.WriteStartElement(name);
             writer.WriteAttributeString("TYPE", type.ToString());
+
             if (type == NodeType.DICTIONARY)
-            {
                 foreach (var i in (Dictionary<KeyValuePair<string, NodeType>, dynamic>) value)
                 {
                     KeyValuePair<string, NodeType> nameType = i.Key;
                     WriteNode(writer, nameType.Key, nameType.Value, i.Value);
                 }
-            }
             else if (type == NodeType.ARRAY)
-            {
                 foreach (var i in (List<KeyValuePair<NodeType, dynamic>>) value)
-                {
-                    WriteNode(writer, "ARRAY-ENTRY", i.Key, i.Value);
-                }
-            }
+                    WriteNode(writer, "entry", i.Key, i.Value);         
             else
                 writer.WriteString(value.ToString());
 
@@ -111,7 +106,7 @@ namespace GameFormatUtil.Compression
                 if (typeGiven)
                 {
                     uint offset = reader.ReadUInt32();
-                     oldPos = reader.BaseStream.Position;
+                    oldPos = reader.BaseStream.Position;
                     reader.BaseStream.Seek(offset, SeekOrigin.Begin);
                 }
                 else
@@ -119,7 +114,7 @@ namespace GameFormatUtil.Compression
                     reader.BaseStream.Seek(-1, SeekOrigin.Current);
                 }
 
-                int length = reader.ReadInt32() & 0x00FFFFFF;
+                int length = (int)reader.Get3LsbBytes(reader.ReadUInt32());
                 dynamic value;
                 switch (type)
                 {
@@ -152,7 +147,15 @@ namespace GameFormatUtil.Compression
                         return reader.ReadInt32();
                     case NodeType.FLOAT:
                         return reader.ReadSingle();
+                    case NodeType.HASHID:
+                        uint hash = reader.ReadCrc32();
+                        Console.WriteLine(hash);
+                        return hash;
+                    case NodeType.NULL:
+                        reader.Skip(3);
+                        return "";
                     default:
+                        Console.WriteLine($"Error at {reader.BaseStream.Position}/{reader.BaseStream.Length}");
                         throw new ByamlException($"Unknown Node Type '{((byte)type).ToString("X2")}'!");
                 }
             }
@@ -172,18 +175,16 @@ namespace GameFormatUtil.Compression
 
         private Dictionary<KeyValuePair<string, NodeType>, dynamic> ReadDictionaryNode(EndianBinaryReader reader, int length)
         {
-            Console.WriteLine(length);
             Dictionary<KeyValuePair<string, NodeType>, dynamic> dictionary = new Dictionary<KeyValuePair<string, NodeType>, dynamic>();
 
             for (int i = 0; i < length; i++)
             {
                 uint lengthType = reader.ReadUInt32();
-                int nameIndex = (int) ((lengthType >> 8) & 0xFFFFFFFF);
-                NodeType type = (NodeType) ((byte)lengthType & 0x000000FF);
-                Console.WriteLine(type.ToString());
+                int nameIndex = (int)reader.Get3MsbBytes(lengthType);
+                NodeType type = (NodeType) reader.Read1MsbByte(lengthType);
                 String name = nameArray[nameIndex];
-                Console.WriteLine(name);
                 dynamic value = ReadNode(reader, type);
+                Console.WriteLine(name);
                 dictionary.Add(new KeyValuePair<string, NodeType>(name, type), value);
             }
 
@@ -249,6 +250,7 @@ namespace GameFormatUtil.Compression
 
         public enum NodeType : byte
         {
+            NULL = 0x00,
             STRING = 0xA0,
             ARRAY = 0xC0,
             DICTIONARY = 0xC1,
@@ -256,7 +258,7 @@ namespace GameFormatUtil.Compression
             BOOLEAN = 0xD0,
             INTEGER = 0xD1,
             FLOAT = 0xD2,
-            UNKNOWN = 0xD3
+            HASHID = 0xD3
         }
 
         #endregion
